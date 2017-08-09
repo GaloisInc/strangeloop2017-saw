@@ -1,0 +1,28 @@
+Developing correct software is hard enough when basic functionality is
+the key concern but becomes even more difficult when security comes into
+play. An attacker need only discover one bug to compromise the security
+of a system.
+
+Testing is the most widely practiced approach for ensuring quality but
+by its nature is able to cover only a limited number of cases. In
+situations where security is critical, exhaustive testing would be ideal
+but is largely infeasible.
+
+Fortunately, automated reasoning tools such as SAT and SMT solvers make
+something equivalent to exhaustive testing tractable. These tools can
+automatically determine whether certain mathematical propositions are
+true, and can be applied to software through the technique of symbolic
+execution. This workshop will introduce you to these tools and show you
+how to use them to prove the correctness of software.
+
+The examples we cover will be drawn primarily from cryptography in part
+because cryptographic code is difficult to get right, and also because
+most cryptographic algorithms are clearly specified, so the properties
+to test are well understood.
+
+We will describe these concepts in the context of an open source tool
+called the Software Analysis Workbench (SAW) which implements symbolic
+execution for Java and C and integrates with SAT and SMT solvers. It
+also allows specification of the desired functionality of code using the
+Cryptol language, originally designed for the specification of
+cryptographic algorithms.
