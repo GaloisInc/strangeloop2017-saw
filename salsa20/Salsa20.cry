@@ -1,0 +1,66 @@
+module Salsa20 where
+
+quarterround : [4][32] -> [4][32]
+quarterround [y0, y1, y2, y3] = [z0, z1, z2, z3]
+  where
+    z1 = y1 ^ ((y0 + y3) <<< 0x7)
+    z2 = y2 ^ ((z1 + y0) <<< 0x9)
+    z3 = y3 ^ ((z2 + z1) <<< 0xd)
+    z0 = y0 ^ ((z3 + z2) <<< 0x12)
+
+rowround : [16][32] -> [16][32]
+rowround ys = join [ (quarterround (yi<<<i))>>>i
+                   | yi <- split ys
+                   | i <- [0 .. 3]
+                   ]
+
+columnround : [16][32] -> [16][32]
+columnround xs = join (transpose [ (quarterround (xi<<<i))>>>i
+                                 | xi <- transpose(split xs)
+                                 | i <- [0 .. 3]
+                                 ])
+
+property columnround_is_transpose_of_rowround ys =
+  rowround ys == join(transpose(split`{4}(columnround xs)))
+  where xs = join(transpose(split`{4} ys))
+
+doubleround : [16][32] -> [16][32]
+doubleround(xs) = rowround(columnround(xs))
+
+littleendian : [4][8] -> [32]
+littleendian b = join(reverse b)
+
+littleendian_inverse : [32] -> [4][8]
+littleendian_inverse b = reverse(split b)
+
+property littleendian_is_invertable b =
+  littleendian_inverse(littleendian b) == b
+
+Salsa20 : [64][8] -> [64][8]
+Salsa20 xs = join ar
+  where
+    ar = [ littleendian_inverse words | words <- xw + zs@10 ]
+    xw = [ littleendian xi | xi <- split xs ]
+    zs = [xw] # [ doubleround zi | zi <- zs ]
+
+property Salsa20_has_no_collisions x1 x2 =
+  if(x1 != x2) then (doubleround x1) != (doubleround x2) else True
+
+Salsa20_expansion : {a} (a >= 1, 2 >= a) => ([16*a][8], [16][8]) -> [64][8]
+Salsa20_expansion(k, n) = z
+  where
+    [s0, s1, s2, s3] = split "expand 32-byte k" : [4][4][8]
+    [t0, t1, t2, t3] = split "expand 16-byte k" : [4][4][8]
+    x = if(`a == 2) then s0 # k0 # s1 # n # s2 # k1 # s3
+                    else t0 # k0 # t1 # n # t2 # k0 # t3
+    z = Salsa20(x)
+    [k0, k1] = (split(k#zero)):[2][16][8]
+
+Salsa20_encrypt : {a, l} (a >= 1, 2 >= a, l <= 2^^70) =>
+                  ([16*a][8], [8][8], [l][8]) -> [l][8]
+Salsa20_encrypt(k, v, m) = c
+  where
+    salsa = take (join [ Salsa20_expansion(k, v#(split i))
+                       | i <- [0, 1 ... ]
+                       ])
+    c = m ^ salsa

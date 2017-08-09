@@ -1,0 +1,24 @@
+import "Salsa20.cry";
+m <- llvm_load_module "salsa20.bc";
+
+let ptr_to_fresh n ty = do {
+    x <- crucible_fresh_var n ty;
+    p <- crucible_alloc ty;
+    crucible_points_to p (crucible_term x);
+    return (x, p);
+};
+
+let s20_encrypt32 : CrucibleSetup() = do {
+    (key, pkey) <- ptr_to_fresh "key" (llvm_array 32 (llvm_int 8));
+    (v, pv) <- ptr_to_fresh "nonce" (llvm_array 8 (llvm_int 8));
+    (m, pm) <- ptr_to_fresh "buf" (llvm_array 64 (llvm_int 8));
+    let si = crucible_term {{ 0 : [32] }};
+    let buflen = crucible_term {{ 64 : [32] }};
+    crucible_execute_func [ pkey, pv, si, pm, buflen ];
+    crucible_points_to pm (crucible_term {{ Salsa20_encrypt (key, v, m) }});
+    crucible_return (crucible_term {{ 0 : [32] }});
+};
+
+time (crucible_llvm_verify m "s20_crypt32" [] false s20_encrypt32 abc);
+
+print "Done!";
