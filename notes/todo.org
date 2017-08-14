@@ -1,0 +1,60 @@
+- What I expect participants to know
+  - Basic C
+  - Building things in a Unix environment
+  - Maybe an intuitive idea of what a logical formula is
+- SAW features to cover
+  - `llvm_extract`
+  - `prove_print` with automated prover
+  - `prove_print` where one prover works better than another?
+  - `sat_print`
+  - pointers (like in XOR swap) using `crucible_llvm_verify`
+  - arrays (what sort of example?)
+  - mention that extensive Cryptol specs, manual rewriting are possible
+    - links to Cryptol, book
+    - links to SAW, manual
+- Possible examples
+  - Add from FM course
+  - XOR swap
+  - FFS
+  - Verifying something with a libfuzzer harness
+- Possible exercises
+  - Try to discover bug in pre-compiled haystack FFS using testing
+  - Try the same using SAW
+  - Showing that `xor_swap` does the right thing
+  - Create optimized version of something, prove equivalent to reference
+  - Solve some SAT problem encoded in C?
+- Possible slides
+  - Schedule/overview/agenda
+  - What SAW is
+  - Installing SAW locally
+  - Using VMs
+  - Property-based testing
+  - Manual vs. random inputs
+  - Translation of programs to formulas
+  - SAT and SMT solvers
+  - Characteristics of more complex SAW verifications (specs, tactics)
+  - Side note: with property-based tests, fuzzing is also powerful
+  - Feeding libfuzzer harnesses into SAW
+  - Other ways to use SAT and SMT?
+- Tools to include
+  - Chosen SAW release
+  - Cryptol
+  - Z3, Yices, CVC4
+  - Clang
+  - LLVM
+  - Vim
+  - Emacs
+  - Make
+- [ ] Create slides
+  - [ ] Decide on examples
+  - [ ] Decide on exercises for examples
+  - [ ] Include C code for all examples
+  - [ ] Include SAW code for all examples
+  - [ ] Create slides describing SAW
+  - [ ] Create slides for each example
+- [ ] Packaging
+  - [ ] Choose release of SAW to freeze for workshop
+  - [ ] Build minimal VM including this release (VMWare)
+  - [ ] Build minimal VM including this release (VirtualBox)
+  - [ ] Publish all examples on GitHub
+  - [ ] Put all examples on VMs
