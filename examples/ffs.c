@@ -35,3 +35,11 @@ uint32_t ffs_musl (uint32_t x)
   };
   return x ? debruijn32[(x&-x)*0x076be629 >> 27]+1 : 0;
 }
+
+int ffs_imp_correct(uint32_t x) {
+    return ffs_imp(x) == ffs_ref(x);
+}
+
+int ffs_bug_correct(uint32_t x) {
+    return ffs_bug(x) == ffs_ref(x);
+}
