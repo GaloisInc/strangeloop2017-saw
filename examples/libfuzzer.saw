@@ -1,0 +1,12 @@
+let fuzzer_spec n = do {
+    let ty = (llvm_array n (llvm_int 8));
+    data <- crucible_fresh_var "data" ty;
+    pdata <- crucible_alloc ty;
+    crucible_points_to pdata (crucible_term data);
+    crucible_execute_func [ pdata, crucible_term {{ `n : [64] }} ];
+    crucible_return (crucible_term {{ 0 : [32] }});
+};
+
+//m <- llvm_load_module "fuzztarget.bc";
+m <- llvm_load_module "fuzzer.bc";
+crucible_llvm_verify m "LLVMFuzzerTestOneInput" [] false (fuzzer_spec 20) abc;
