@@ -4,19 +4,19 @@
 
 # Agenda
 
-* TODO: Installation (~15m)
+* Installation (~15m)
 
-* TODO: Basic Overview (~15m)
+* Basic overview (~15m)
 
-* TODO: Exercises (~20m)
+* Exercises (~20m)
 
-* TODO: More Flexible Verification (~15m)
+* More flexible verification (~15m)
 
-* TODO: Exercises (~20m)
+* Exercises (~20m)
 
-* TODO: Composition (~15m)
+* Composition and more (~15m)
 
-* TODO: Exercises (~20m)
+* Exercises (~20m)
 
 # Installing SAW Locally
 
@@ -26,7 +26,7 @@
 
 # What is SAW?
 
-* TODO
+* TODO: take from other presentations
 
 # Property Based Testing
 
@@ -38,32 +38,32 @@
 
 ~~~~ .c
 void swap_xor(uint32_t *x, uint32_t *y) {
-    *x = *x ^ *y;
-    *y = *x ^ *y;
-    *x = *x ^ *y;
+  *x = *x ^ *y;
+  *y = *x ^ *y;
+  *x = *x ^ *y;
 }
 ~~~~
 
-* Focus on values, since that's where the tricky part are
+* Focus on values, since that's where the tricky parts are
     * Pointers used just so it can be a separate function
 
 # A Specification for Swapping
 
 ~~~~ .c
 void swap_direct(uint32_t *x, uint32_t *y) {
-    uint32_t tmp;
-    tmp = *y;
-    *y = *x;
-    *x = tmp;
+  uint32_t tmp;
+  tmp = *y;
+  *y = *x;
+  *x = tmp;
 }
 ~~~~
 
 ~~~~ .c
 int swap_correct(uint32_t x, uint32_t y) {
-    uint32_t x1 = x, x2 = x, y1 = y, y2 = y;
-    swap_xor(&x1, &y1);
-    swap_direct(&x2, &y2);
-    return (x1 == x2 && y1 == y2);
+  uint32_t x1 = x, x2 = x, y1 = y, y2 = y;
+  swap_xor(&x1, &y1);
+  swap_direct(&x2, &y2);
+  return (x1 == x2 && y1 == y2);
 }
 ~~~~
 
@@ -71,29 +71,33 @@ int swap_correct(uint32_t x, uint32_t y) {
 
 ~~~~ .c
 int main() {
-    assert(swap_correct(0, 0));
-    assert(swap_correct(0, 1));
-    assert(swap_correct(1, 0));
-    assert(swap_correct(32, 76));
-    assert(swap_correct(0xFFFFFFFF, 0));
-    assert(swap_correct(0, 0xFFFFFFFF));
-    assert(swap_correct(0xFFFFFFFF, 0xFFFFFFFF));
-    return 0;
+  assert(swap_correct(0, 0));
+  assert(swap_correct(0, 1));
+  assert(swap_correct(1, 0));
+  assert(swap_correct(32, 76));
+  assert(swap_correct(0xFFFFFFFF, 0));
+  assert(swap_correct(0, 0xFFFFFFFF));
+  assert(swap_correct(0xFFFFFFFF, 0xFFFFFFFF));
+  return 0;
 }
 ~~~~
+
+* TODO: points about pros and cons
 
 # Random Swap Testing
 
 ~~~~ .c
 int main() {
-    for(int idx = 0; i < 100; i++) {
-        uint32_t x = rand();
-        uint32_t y = rand();
-        assert(swap_correct(x, y));
-    }
-    return 0;
+  for(int idx = 0; i < 100; i++) {
+    uint32_t x = rand();
+    uint32_t y = rand();
+    assert(swap_correct(x, y));
+  }
+  return 0;
 }
 ~~~~
+
+* TODO: points about pros and cons
 
 # Translating Programs to Formulas
 
@@ -108,6 +112,8 @@ int main() {
 * `swap_direct`: $\lambda (x, y).~(y, x)$
 
 * Translation achieved using a technique called *symbolic execution*
+
+    * TODO: more
 
 # SAT and SMT Solvers
 
@@ -174,23 +180,27 @@ uint32_t ffs_imp(uint32_t i) {
 
 # Manual FFS Testing
 
-* TODO
+* TODO: describe
 
 ~~~~ .c
 int ffs_imp_correct(uint32_t x) {
-    return ffs_imp(x) == ffs_ref(x);
+  return ffs_imp(x) == ffs_ref(x);
 }
 ~~~~
 
+* TODO: list specific tests
+
 # Random FFS Testing
+
+* TODO: describe
 
 ~~~~ .c
 int main() {
-    for(int idx = 0; i < 100; i++) {
-        uint32_t x = rand();
-        assert(ffs_imp_correct(x));
-    }
-    return 0;
+  for(int idx = 0; i < 100; i++) {
+    uint32_t x = rand();
+    assert(ffs_imp_correct(x));
+  }
+  return 0;
 }
 ~~~~
 
@@ -202,27 +212,68 @@ int main() {
 
 # Verifying FFS Without Wrapper
 
-* TODO: llvm_extract
+* TODO: llvm_extract of ffs_ref
 
-* TODO: prove_print
+* TODO: llvm_verify of ffs_imp
 
 # Pointers: Verifying XOR Swap Without Wrapper
 
-* TODO: llvm_verify
+* TODO: llvm_verify, ptr_to_fresh
 
 # More Complex Verifications, In General
 
-* TODO: initialize state
+* Verifications in SAW consist of three phases
 
-* TODO: run target code
+    * Initialize a starting state
 
-* TODO: check final state
+    * Run the target code in that state
 
-# Composition: Verifying Salsa20
+    * Check that the final state is correct
 
-* TODO: show low-level function
+* Commands like `llvm_extract` just simplify a common case
 
-* TODO: show one level on top of that
+* When running the target code, we can sometimes use previously-proven
+  facts about code it calls
+
+# Composition: Verifying Salsa20 (C code)
+
+~~~~ .c
+static void s20_quarterround(uint32_t *y0, uint32_t *y1,
+                             uint32_t *y2, uint32_t *y3)
+{
+  *y1 = *y1 ^ rotl(*y0 + *y3, 7);
+  *y2 = *y2 ^ rotl(*y1 + *y0, 9);
+  *y3 = *y3 ^ rotl(*y2 + *y1, 13);
+  *y0 = *y0 ^ rotl(*y3 + *y2, 18);
+}
+
+static void s20_rowround(uint32_t y[static 16])
+{
+  s20_quarterround(&y[0], &y[1], &y[2], &y[3]);
+  s20_quarterround(&y[5], &y[6], &y[7], &y[4]);
+  s20_quarterround(&y[10], &y[11], &y[8], &y[9]);
+  s20_quarterround(&y[15], &y[12], &y[13], &y[14]);
+}
+~~~~
+
+# Composition: Verifying Salsa20 (SAW code)
+
+~~~~
+let quarterround_setup : CrucibleSetup () = do {
+  (p0, y0) <- ptr_to_fresh "y0" i32;
+  // ... and three more
+  crucible_execute_func [p0, p1, p2, p3];
+  let zs = {{ quarterround [y0,y1,y2,y3] }};
+  crucible_points_to p0 (crucible_term {{ zs@0 }});
+    // ... and three more
+};
+
+let rowround_setup = do {
+  (y, p) <- ptr_to_fresh "y" (llvm_array 16 i32);
+  crucible_execute_func [p];
+  crucible_points_to p (crucible_term {{ rowround x }});
+};
+~~~~
 
 # Sidebar: Fuzzing for Property Based Tests
 
@@ -241,25 +292,36 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data,
 
 ~~~~
 let fuzzer_spec n = do {
-    let ty = (llvm_array n (llvm_int 8));
-    data <- crucible_fresh_var "data" ty;
-    pdata <- crucible_alloc ty;
-    crucible_points_to pdata (crucible_term data);
-    crucible_execute_func
-        [ pdata
-        , crucible_term {{ `n : [64] }}
-        ];
-    crucible_return (crucible_term {{ 0 : [32] }});
+  let ty = llvm_array n i8;
+  (pdata, data) <- ptr_to_fresh "data" ty;
+  crucible_execute_func
+    [ pdata
+    , crucible_term {{ `n : [64] }}
+    ];
+  crucible_return (crucible_term {{ 0 : [32] }});
 };
 
 m <- llvm_load_module "fuzztarget.bc";
-crucible_llvm_verify m "LLVMFuzzerTestOneInput"
-    [] false (fuzzer_spec 20) abc;
+for [1, 10, 20, 100] (\sz ->
+  crucible_llvm_verify m "LLVMFuzzerTestOneInput"
+    [] true (fuzzer_spec n) abc);
 ~~~~
 
 # Other Ways to use SAT and SMT
 
-* TODO
+* TODO: Interfaces
+
+    * TODO: Cryptol
+
+    * TODO: SBV
+
+    * TODO: Rise4Fun
+
+    * TODO: Python Z3 bindings
+
+* TODO: examples of use cases
+
+    * TODO
 
 # Other Things Available in SAW
 
@@ -275,6 +337,16 @@ crucible_llvm_verify m "LLVMFuzzerTestOneInput"
 
 * TODO
 
-# Conclusion
+# Final Points
 
-* TODO
+* TODO: pointers
+
+    * TODO: saw.galois.com
+    
+    * TODO: cryptol.net
+    
+    * TODO: manuals
+
+* TODO: where to go from here
+
+* I'll be around all day, and happy to talk more!
