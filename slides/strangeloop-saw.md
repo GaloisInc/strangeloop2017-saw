@@ -18,11 +18,28 @@
 
 * Exercises (~20m)
 
-# Installing SAW Locally
+# Installing SAW
 
-* TODO: locally
+* https://saw.galois.com/downloads.html
 
-* TODO: VM images
+* https://saw.galois.com/builds/nightly/
+
+* Builds available for:
+
+  * CentOS 6 (32-bit and 64-bit)
+
+  * CentOS 7 (64-bit)
+
+  * macOS (64-bit)
+
+  * Ubuntu 14.04 (64-bit)
+
+  * Windows (64-bit)
+
+* VirtualBox VM image:
+
+  * http://<ipaddr>:8000/SAW Workshop (Debian).vdi
+  * Login: root/saw-workshop, saw/saw-workshop
 
 # What is SAW?
 
@@ -82,7 +99,15 @@ int main() {
 }
 ~~~~
 
-* TODO: points about pros and cons
+* Advantages
+
+    * Ensures that you will always test important values
+
+    * Carefully chosen tests can cover many important cases quickly
+
+* Disadvantages
+
+    * May miss classes of inputs that you didn't think of
 
 # Random Swap Testing
 
@@ -97,7 +122,15 @@ int main() {
 }
 ~~~~
 
-* TODO: points about pros and cons
+* Advantages
+
+    * Better theoretical coverage of input space
+
+    * Number of tests limited only by available processing power
+
+* Disadvantages
+
+    * May miss important classes of inputs that are easy to identify by hand
 
 # Translating Programs to Formulas
 
@@ -117,7 +150,7 @@ int main() {
 
 # SAT and SMT Solvers
 
-* TODO: automated provers for mathematical theorems
+* Automated provers for mathematical theorems
 
     * Such as: $\forall x, y.~(x \oplus y \oplus x \oplus y \oplus y, x
       \oplus y \oplus y) \equiv (y, x)$
@@ -129,11 +162,11 @@ int main() {
 * Almost magic for what they can do, SAT can deal with things like:
 
     * Fixed-size bit vectors (even multiplication, but slowly)
-    
+
     * Bit manipulation operations (and, or, xor, shifts)
-    
+
     * Arrays of fixed sizes
-    
+
     * Conditionals
 
 * SMT adds things like:
@@ -141,6 +174,20 @@ int main() {
     * Linear arithmetic on integers (addition, subtraction, multiplication by constants)
 
     * Arrays of arbitrary size
+
+# Automated Verification vs. Testing
+
+* Advantages
+
+    * Ensures that you will test *all possible* input values
+
+    * Sometimes faster than testing
+
+* Disadvantages
+
+    * Applicable to a smaller class of programs than testing
+
+    * Sometimes much slower than testing
 
 # Verifying Swap Correctness
 
@@ -180,15 +227,24 @@ uint32_t ffs_imp(uint32_t i) {
 
 # Manual FFS Testing
 
-* TODO: describe
-
 ~~~~ .c
 int ffs_imp_correct(uint32_t x) {
   return ffs_imp(x) == ffs_ref(x);
 }
 ~~~~
 
-* TODO: list specific tests
+~~~~ .c
+int main() {
+  assert(ffs_imp_correct(0x00000000));
+  assert(ffs_imp_correct(0x00000001));
+  assert(ffs_imp_correct(0x80000000));
+  assert(ffs_imp_correct(0x80000001));
+  assert(ffs_imp_correct(0xF0000000));
+  assert(ffs_imp_correct(0x0000000F));
+  assert(ffs_imp_correct(0xFFFFFFFF));
+  return 0;
+}
+~~~~
 
 # Random FFS Testing
 
@@ -206,19 +262,69 @@ int main() {
 
 # Verifying FFS Harness
 
-* TODO: llvm_extract
+~~~~
+m <- llvm_load_module "ffs.bc";
 
-* TODO: prove_print
+ffs_imp_correct <- llvm_extract m "ffs_imp_correct" llvm_pure;
+
+set_base 16;
+print "Proving ffs_imp_correct always returns true...";
+prove_print abc {{ \x -> ffs_imp_correct x == 1 }};
+~~~~
 
 # Verifying FFS Without Wrapper
 
-* TODO: llvm_extract of ffs_ref
+~~~~
+m <- llvm_load_module "ffs.bc";
 
-* TODO: llvm_verify of ffs_imp
+ref <- llvm_extract m "ffs_ref" llvm_pure;
+imp <- llvm_extract m "ffs_imp" llvm_pure;
+
+prove_print abc {{ ref === imp }}; // Like \x -> ref x == imp x
+~~~~
 
 # Pointers: Verifying XOR Swap Without Wrapper
 
-* TODO: llvm_verify, ptr_to_fresh
+~~~~
+m <- llvm_load_module "xor-swap.bc";
+
+let swap_spec = do {
+    x <- crucible_fresh_var "x" (llvm_int 32);
+    y <- crucible_fresh_var "y" (llvm_int 32);
+    xp <- crucible_alloc (llvm_int 32);
+    yp <- crucible_alloc (llvm_int 32);
+    crucible_points_to xp (crucible_term x);
+    crucible_points_to yp (crucible_term y);
+    crucible_execute_func [xp, yp];
+    crucible_points_to xp (crucible_term y);
+    crucible_points_to yp (crucible_term x);
+};
+
+crucible_llvm_verify m "swap_xor" [] true swap_spec abc;
+~~~~
+
+# Simplifying the XOR Swap specification
+
+~~~~
+m <- llvm_load_module "xor-swap.bc";
+
+let ptr_to_fresh nm ty = do {
+    x <- crucible_fresh_var nm ty;
+    p <- crucible_alloc ty;
+    crucible_points_to p (crucible_term x);
+    return (x, p);
+};
+
+let swap_spec = do {
+    (x, xp) <- ptr_to_fresh "x" (llvm_int 32);
+    (y, yp) <- ptr_to_fresh "y" (llvm_int 32);
+    crucible_execute_func [xp, yp];
+    crucible_points_to xp (crucible_term y);
+    crucible_points_to yp (crucible_term x);
+};
+
+crucible_llvm_verify m "swap_xor" [] true swap_spec abc;
+~~~~
 
 # More Complex Verifications, In General
 
@@ -238,21 +344,19 @@ int main() {
 # Composition: Verifying Salsa20 (C code)
 
 ~~~~ .c
-static void s20_quarterround(uint32_t *y0, uint32_t *y1,
-                             uint32_t *y2, uint32_t *y3)
-{
-  *y1 = *y1 ^ rotl(*y0 + *y3, 7);
-  *y2 = *y2 ^ rotl(*y1 + *y0, 9);
-  *y3 = *y3 ^ rotl(*y2 + *y1, 13);
-  *y0 = *y0 ^ rotl(*y3 + *y2, 18);
+uint32_t rotl(uint32_t value, int shift) {
+  return (value << shift) | (value >> (32 - shift));
 }
 
-static void s20_rowround(uint32_t y[static 16])
-{
+void s20_quarterround(uint32_t *y0, uint32_t *y1,
+                      uint32_t *y2, uint32_t *y3) {
+  *y1 = *y1 ^ rotl(*y0 + *y3, 7);
+  // ... and three more
+}
+
+void s20_rowround(uint32_t y[static 16]) {
   s20_quarterround(&y[0], &y[1], &y[2], &y[3]);
-  s20_quarterround(&y[5], &y[6], &y[7], &y[4]);
-  s20_quarterround(&y[10], &y[11], &y[8], &y[9]);
-  s20_quarterround(&y[15], &y[12], &y[13], &y[14]);
+  // ... and three more
 }
 ~~~~
 
@@ -277,13 +381,23 @@ let rowround_setup = do {
 
 # Sidebar: Fuzzing for Property Based Tests
 
-* TODO: mention libfuzzer
+* Klee is another LLVM symbolic execution system
+
+* Doesn't aim for complete coverage, but very powerful
+
+    * Better at finding bugs than SAW
+
+    * Not generally usable for verification
+
+* Associated fuzz testing system, `libfuzzer`
+
+    * Includes a `main` function that calls fuzzing harness
 
 ~~~~ .c
 int LLVMFuzzerTestOneInput(const uint8_t *Data,
                            size_t Size) {
   DoSomethingInterestingWithMyAPI(Data, Size);
-  return 0;  // Non-zero reserved for future use.
+  return 0;
 }
 
 ~~~~
@@ -309,15 +423,13 @@ for [1, 10, 20, 100] (\sz ->
 
 # Other Ways to use SAT and SMT
 
-* TODO: Interfaces
+* Interfaces
 
-    * TODO: Cryptol
+    * Cryptol (https://cryptol.net)
 
-    * TODO: SBV
+    * SBV (http://leventerkok.github.io/sbv/)
 
-    * TODO: Rise4Fun
-
-    * TODO: Python Z3 bindings
+    * rise4Fun (http://rise4fun.com/)
 
 * TODO: examples of use cases
 
@@ -325,27 +437,50 @@ for [1, 10, 20, 100] (\sz ->
 
 # Other Things Available in SAW
 
-* TODO: Java
+* Support for various languages
 
-* TODO: Coming soon: Rust, Go, some degree of machine code
+    * Others that compile to LLVM (simple C++ and Rust have been tested,
+      others YMMV)
 
-* TODO: more powerful interactive verification
+    * Languages that compile to JVM (only Java known to work well, but
+      others might)
 
-* TODO: Coming soon: bindings to external interactive provers, including Lean and Coq
+    * Coming soon: Rust, Go, some degree of machine code
+
+* Some interactive proof tactics
+
+    * Mostly rewriting with user-defined rules
+
+    * Coming soon: bindings to external interactive provers, including
+      Lean and Coq
 
 # How Much Can You Do?
 
-* TODO
+* With the current version of SAW, programs must be *finite*
+
+    * Inputs have fixed sizes
+
+    * All pointers point to data of known size
+
+    * All loops can be finitely unrolled
+
+* Future versions are likely to relax these restrictions
 
 # Final Points
 
-* TODO: pointers
+* Resources
 
-    * TODO: saw.galois.com
-    
-    * TODO: cryptol.net
-    
-    * TODO: manuals
+    * SAW web site: https://saw.galois.com
+
+    * Cryptol web site: https://cryptol.net
+
+    * SAW documentation
+
+        * Tutorial: https://saw.galois.com/tutorial.html
+
+        * Manual: https://saw.galois.com/manual.html
+
+    * Cryptol documentation: https://cryptol.net/documentation.html
 
 * TODO: where to go from here
 
