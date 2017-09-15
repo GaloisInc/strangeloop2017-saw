@@ -26,13 +26,13 @@
 
 * Builds available for:
 
-  * CentOS 6 (32-bit and 64-bit)
+  * CentOS 6 (32-bit and 64-bit) (anything similar to older RedHat)
 
-  * CentOS 7 (64-bit)
+  * CentOS 7 (64-bit) (anything similar to newer RedHat)
 
   * macOS (64-bit)
 
-  * Ubuntu 14.04 (64-bit)
+  * Ubuntu 14.04 (64-bit) (anything similar to recent-ish Debian)
 
   * Windows (64-bit)
 
