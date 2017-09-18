@@ -1,8 +1,21 @@
 #include <stdint.h>
 
-#include "ffs_ref.c"
+uint32_t ffs_ref(uint32_t word) {
+  if(!word) return 0;
+  for(int c = 0, i = 0; c < 32; c++)
+    if(((1 << i++) & word) != 0)
+      return i;
+  return 0;
+}
 
-#include "ffs_imp.c"
+uint32_t ffs_imp(uint32_t i) {
+  char n = 1;
+  if (!(i & 0xffff)) { n += 16; i >>= 16; }
+  if (!(i & 0x00ff)) { n +=  8; i >>=  8; }
+  if (!(i & 0x000f)) { n +=  4; i >>=  4; }
+  if (!(i & 0x0003)) { n +=  2; i >>=  2; }
+  return (i) ? (n+((i+1) & 0x01)) : 0;
+}
 
 uint32_t ffs_imp_nobranch(uint32_t i) {
   char n = 1;
@@ -18,7 +31,12 @@ uint32_t ffs_imp_nobranch(uint32_t i) {
   return (i) ? (n+((i+1) & 0x01)) : 0;
 }
 
-#include "ffs_bug.c"
+// and now a buggy one
+uint32_t ffs_bug(uint32_t word) {
+    // injected bug:
+    if(word == 0x101010) return 4; // instead of 5
+    return ffs_ref(word);
+}
 
 // Creative optimized version based on musl libc:
 // http://www.musl-libc.org/.

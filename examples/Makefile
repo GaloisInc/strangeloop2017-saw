@@ -2,11 +2,11 @@ SAW?=saw
 CLANG?=clang
 CLANGOPTS?=-c -emit-llvm
 
-CFILES=add-comm.c direct-swap.c xor-swap.c xor-swap-bug.c ffs.c
+CFILES=$(wildcard *.c)
 BCFILES=$(patsubst %.c, %.bc, ${CFILES})
 LOGFILES=$(patsubst %.saw, %.log, $(wildcard *.saw))
 
-all: ${BCFILES}
+all: deps.mk ${BCFILES}
 
 run: ${LOGFILES}
 
@@ -19,10 +19,7 @@ run: ${LOGFILES}
 clean:
 	rm -f ${BCFILES} ${LOGFILES}
 
-ffs_bug.log: ffs.bc
-ffs_bug_fail.log: ffs.bc
-ffs_eq.log: ffs.bc
-ffs_sat.log: ffs.bc
-swap.log: xor-swap.bc
-swap.log: xor-swap-bug.bc
-swap.log: direct-swap.bc
+deps.mk:
+	./mkdeps.sh
+
+-include deps.mk
