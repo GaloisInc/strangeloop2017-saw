@@ -26,28 +26,58 @@
 
 * Builds available for:
 
-  * CentOS 6 (32-bit and 64-bit) (anything similar to older RedHat)
+    * CentOS 6 (32-bit and 64-bit) (anything similar to older RedHat)
 
-  * CentOS 7 (64-bit) (anything similar to newer RedHat)
+    * CentOS 7 (64-bit) (anything similar to newer RedHat)
 
-  * macOS (64-bit)
+    * macOS (64-bit)
 
-  * Ubuntu 14.04 (64-bit) (anything similar to recent-ish Debian)
+    * Ubuntu 14.04 (64-bit) (anything similar to recent-ish Debian)
 
-  * Windows (64-bit)
+    * Windows (64-bit)
 
 * VirtualBox VM image:
 
-  * http://<ipaddr>:8000/SAW Workshop (Debian).vdi
-  * Login: root/saw-workshop, saw/saw-workshop
+    * http://<ipaddr>:8000/SAW Workshop (Debian).vdi
+    * Login: root/saw-workshop, saw/saw-workshop
 
 # What is SAW?
 
-* TODO: take from other presentations
+* A tool to construct *models* of program behavior
+
+    * Works with C (LLVM), Java (JVM), and others in progress
+  
+    * Also supports specifications written in Cryptol
+
+* Models can then be *proved* to have certain properties
+
+    * Equivalence with specifications
+  
+    * Guarantees to return certain values
+
+* Proofs generally done using *automated* reasoning tools
+
+    * So similar level of effort to testing
 
 # Property Based Testing
 
-* TODO
+* Rather than testing individual cases, state general properties
+
+* Then can test those properties on specific values
+
+    * Manually selected
+  
+    * Randomly generated
+
+* For example, this function should always return a non-zero value:
+
+~~~~ .c
+int add_commutes(uint32_t x, uint32_t y) {
+    return x + y == y + x;
+}
+~~~~
+
+* The QuickCheck approach is a common implementation of this paradigm
 
 # XOR Swap Example
 
@@ -108,6 +138,8 @@ int main() {
 * Disadvantages
 
     * May miss classes of inputs that you didn't think of
+    
+    * Non-deterministics: different runs may have different results
 
 # Random Swap Testing
 
@@ -138,14 +170,18 @@ int main() {
 
     * takes an argument $x$, and returns $x + 1$
 
-* `swap_xor`: $\lambda (x, y).~(x \oplus y \oplus x \oplus y \oplus y, x \oplus y \oplus y)$
+* `swap_direct`: $\lambda (x, y).~(y, x)$
+
+* `swap_xor`: $\lambda (x, y).~(x \oplus y \oplus x \oplus y \oplus y, x
+  \oplus y \oplus y)$
 
     * but $x \oplus x \equiv 0$ and $x \oplus 0 \equiv x$
 
-* `swap_direct`: $\lambda (x, y).~(y, x)$
+* Translation achieved in SAW using a technique called *symbolic
+  execution*
 
-* Translation achieved using a technique called *symbolic execution*
-
+    * Think: an interpreter with expressions in place of values
+    
     * TODO: more
 
 # SAT and SMT Solvers
@@ -159,7 +195,7 @@ int main() {
 
 * SMT = Satisfiability Modulo Theories
 
-* Almost magic for what they can do, SAT can deal with things like:
+* Almost magic for what they can do. SAT can deal with:
 
     * Fixed-size bit vectors (even multiplication, but slowly)
 
@@ -171,7 +207,8 @@ int main() {
 
 * SMT adds things like:
 
-    * Linear arithmetic on integers (addition, subtraction, multiplication by constants)
+    * Linear arithmetic on integers (addition, subtraction,
+      multiplication by constants)
 
     * Arrays of arbitrary size
 
@@ -248,7 +285,7 @@ int main() {
 
 # Random FFS Testing
 
-* TODO: describe
+* Same pros and cons as for the swap example
 
 ~~~~ .c
 int main() {
@@ -265,11 +302,11 @@ int main() {
 ~~~~
 m <- llvm_load_module "ffs.bc";
 
-ffs_imp_correct <- llvm_extract m "ffs_imp_correct" llvm_pure;
+correct <- llvm_extract m "ffs_imp_correct" llvm_pure;
 
-set_base 16;
+set_base 16; // For hex counter-examples
 print "Proving ffs_imp_correct always returns true...";
-prove_print abc {{ \x -> ffs_imp_correct x == 1 }};
+prove_print abc {{ \x -> correct x == 1 }};
 ~~~~
 
 # Verifying FFS Without Wrapper
@@ -280,14 +317,39 @@ m <- llvm_load_module "ffs.bc";
 ref <- llvm_extract m "ffs_ref" llvm_pure;
 imp <- llvm_extract m "ffs_imp" llvm_pure;
 
-prove_print abc {{ ref === imp }}; // Like \x -> ref x == imp x
+// Following equivalent to \x -> ref x == imp x
+prove_print abc {{ ref === imp }};
 ~~~~
+
+# Exercises: FFS
+
+0. Run the equivalence proof in `ffs_eq.saw`
+
+1. Port the FFS code to use `uint64_t`
+
+  * Translate both reference and implementation
+  
+  * Which one is wrong?
+
+2. Try to break the FFS code, in obvious and subtle ways
+
+  * Can you make it do the wrong thing and not be caught?
+
+3. Try to discover the "haystack" bug in `ffs_bug`
+
+  * Use random testing (`ffs_bug_fail.saw`)
+
+    * Increase the number of tests and see how long it takes
+
+    * Try a similar case with `uint64_t`
+  
+  * Use `ffs_bug.saw` to find it with a SAT solver
 
 # Pointers: Verifying XOR Swap Without Wrapper
 
 ~~~~
 m <- llvm_load_module "xor-swap.bc";
-
+// void swap_xor(uint32_t *x, uint32_t *y);
 let swap_spec = do {
     x <- crucible_fresh_var "x" (llvm_int 32);
     y <- crucible_fresh_var "y" (llvm_int 32);
@@ -325,6 +387,14 @@ let swap_spec = do {
 
 crucible_llvm_verify m "swap_xor" [] true swap_spec abc;
 ~~~~
+
+# Exercises: Code with Pointers
+
+* TODO: break the XOR-based swapping in some way and try the proof
+
+    * Use `swap.saw`
+  
+* TODO: more
 
 # More Complex Verifications, In General
 
@@ -375,9 +445,37 @@ let quarterround_setup : CrucibleSetup () = do {
 let rowround_setup = do {
   (y, p) <- ptr_to_fresh "y" (llvm_array 16 i32);
   crucible_execute_func [p];
-  crucible_points_to p (crucible_term {{ rowround x }});
+  crucible_points_to p (crucible_term {{ rowround y }});
 };
 ~~~~
+
+# Sidebar: Array Sizes and Looping
+
+* With the current version of SAW, programs must be *finite*
+
+    * SAT-based proofs need to know how many bits are involved
+
+    * Inputs need to have fixed sizes
+
+    * All pointers must point to data of known size
+
+    * All loops need to execute a bounded number of types
+
+* Future versions are likely to relax these restrictions
+
+* But, for now, Salsa20 can operate on any input size
+
+    * So we prove it correct separately for several possible sizes
+
+# Exercises: Composition
+
+* TODO: run monolithic and compositional proofs
+
+* TODO: compare compositional vs. monolithic verification
+
+* TODO: when checking multiple sizes, how does it compare?
+
+* TODO: how many sizes before it becomes better?
 
 # Sidebar: Fuzzing for Property Based Tests
 
@@ -454,18 +552,6 @@ for [1, 10, 20, 100] (\sz ->
     * Coming soon: bindings to external interactive provers, including
       Lean and Coq
 
-# How Much Can You Do?
-
-* With the current version of SAW, programs must be *finite*
-
-    * Inputs have fixed sizes
-
-    * All pointers point to data of known size
-
-    * All loops can be finitely unrolled
-
-* Future versions are likely to relax these restrictions
-
 # Final Points
 
 * Resources
@@ -482,6 +568,6 @@ for [1, 10, 20, 100] (\sz ->
 
     * Cryptol documentation: https://cryptol.net/documentation.html
 
-* TODO: where to go from here
-
 * I'll be around all day, and happy to talk more!
+
+* And if this sort of thing interests you, Galois is hiring!
