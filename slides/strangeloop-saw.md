@@ -400,11 +400,14 @@ crucible_llvm_verify m "swap_xor" [] true swap_spec abc;
 
 # Exercises: Code with Pointers
 
-* Try to break the XOR-based swapping in some way and run the proof
+1. Try to break the XOR-based swapping in some way and run the proof
 
     * Use `swap.saw` or `swap_harness.saw`
 
-* TODO: more
+2. Write a buggy version and use SAW to find inputs for which it's
+   correct
+
+3. TODO
 
 # More Complex Verifications, In General
 
@@ -479,13 +482,23 @@ let rowround_setup = do {
 
 # Exercises: Composition
 
-* TODO: run monolithic and compositional proofs
+1. Run the monolithic and compositional proofs
 
-* TODO: compare compositional vs. monolithic verification
+  * `salsa.saw` and `salsa-compositional.saw`
 
-* TODO: when checking multiple sizes, how does it compare?
+2. Compare the timing of the two
 
-* TODO: how many sizes before it becomes better?
+  * When checking multiple sizes, how does it compare?
+
+  * How many sizes before it becomes better?
+
+3. Try to break the code and see what happens
+
+  * First try a leaf function
+
+  * Then try the top-level function
+
+4. Can you break it so that one size succeeds but another fails 
 
 # Sidebar: Fuzzing for Property Based Tests
 
