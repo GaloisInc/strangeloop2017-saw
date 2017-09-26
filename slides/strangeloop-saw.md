@@ -542,20 +542,6 @@ for [1, 10, 20, 100] (\sz ->
     [] true (fuzzer_spec n) abc);
 ~~~~
 
-# Other Ways to use SAT and SMT
-
-* Interfaces
-
-    * Cryptol (https://cryptol.net)
-
-    * SBV (http://leventerkok.github.io/sbv/)
-
-    * rise4Fun (http://rise4fun.com/)
-
-* TODO: examples of use cases
-
-    * TODO
-
 # Other Things Available in SAW
 
 * Support for various languages
