@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 void swap_direct(uint8_t *x, uint8_t *y) {
