@@ -38,24 +38,24 @@
 
 * VirtualBox VM image:
 
-    * http://<ipaddr>:8000/SAW Workshop (Debian).vdi
+    * http://ipaddr:8000/SAW Workshop (Debian).vdi
     * Login: root/saw-workshop, saw/saw-workshop
 
 # What is SAW?
 
-* A tool to construct *models* of program behavior
+* A tool to construct \alert{models} of program behavior
 
     * Works with C (LLVM), Java (JVM), and others in progress
 
     * Also supports specifications written in Cryptol
 
-* Models can then be *proved* to have certain properties
+* Models can then be \alert{proved} to have certain properties
 
     * Equivalence with specifications
 
     * Guarantees to return certain values
 
-* Proofs generally done using *automated* reasoning tools
+* Proofs generally done using \alert{automated} reasoning tools
 
     * So similar level of effort to testing
 
@@ -124,7 +124,6 @@ int main() {
   assert(swap_correct(0, 1));
   assert(swap_correct(1, 0));
   assert(swap_correct(32, 76));
-  assert(swap_correct(0xFFFFFFFF, 0));
   assert(swap_correct(0, 0xFFFFFFFF));
   assert(swap_correct(0xFFFFFFFF, 0xFFFFFFFF));
   return 0;
@@ -166,7 +165,7 @@ int main() {
 
     * May miss important classes of inputs that are easy to identify by hand
 
-# Translating Programs to Formulas
+# Translating Programs to Pure Functions
 
 * $\lambda x.~x + 1$ is a function
 
@@ -184,7 +183,8 @@ int main() {
 
     * Think: an interpreter with expressions in place of values
 
-    * TODO: more
+    * Every variable's value at the end is an expression representing
+      *all possible values* it might take
 
 # SAT and SMT Solvers
 
@@ -214,11 +214,13 @@ int main() {
 
     * Arrays of arbitrary size
 
+    * Uninterpreted functions
+
 # Automated Verification vs. Testing
 
 * Advantages
 
-    * Ensures that you will test *all possible* input values
+    * Ensures that you will test \alert{all possible} input values
 
     * Sometimes faster than testing
 
@@ -241,7 +243,7 @@ harness <- llvm_extract swapmod "swap_correct" llvm_pure;
 prove_print abc {{ \x y -> harness x y != 0 }};
 ~~~~
 
-In `swap_harness.saw`
+(In `swap_harness.saw`)
 
 # FFS Example
 
@@ -308,12 +310,11 @@ m <- llvm_load_module "ffs.bc";
 
 correct <- llvm_extract m "ffs_imp_correct" llvm_pure;
 
-set_base 16; // For hex counter-examples
 print "Proving ffs_imp_correct always returns true...";
 prove_print abc {{ \x -> correct x == 1 }};
 ~~~~
 
-In `ffs_harness.saw`
+(In `ffs_harness.saw`)
 
 # Verifying FFS Without Wrapper
 
@@ -327,7 +328,7 @@ imp <- llvm_extract m "ffs_imp" llvm_pure;
 prove_print abc {{ ref === imp }};
 ~~~~
 
-In `ffs_eq.saw`
+(In `ffs_eq.saw`)
 
 # Exercises: FFS
 
@@ -369,11 +370,10 @@ let swap_spec = do {
     crucible_points_to xp (crucible_term y);
     crucible_points_to yp (crucible_term x);
 };
-
 crucible_llvm_verify m "swap_xor" [] true swap_spec abc;
 ~~~~
 
-In `swap.saw`
+(In `swap.saw`)
 
 # Simplifying the XOR Swap specification
 
@@ -407,7 +407,14 @@ crucible_llvm_verify m "swap_xor" [] true swap_spec abc;
 2. Write a buggy version and use SAW to find inputs for which it's
    correct
 
-3. TODO
+   * These would be bad test cases!
+
+3. Write a script to prove the FFS test harness using
+   `crucible_llvm_verify`
+
+   * You'll need `crucible_return {{ 1 : [32] }}` and `crucible_term`
+
+   * You won't need `crucible_alloc` or `crucible_points_to`
 
 # More Complex Verifications, In General
 
@@ -464,7 +471,7 @@ let rowround_setup = do {
 
 # Sidebar: Array Sizes and Looping
 
-* With the current version of SAW, programs must be *finite*
+* With the current version of SAW, programs must be \alert{finite}
 
     * SAT-based proofs need to know how many bits are involved
 
@@ -474,11 +481,13 @@ let rowround_setup = do {
 
     * All loops need to execute a bounded number of types
 
-* Future versions are likely to relax these restrictions
-
-* But, for now, Salsa20 can operate on any input size
+* But Salsa20 can operate on any input size
 
     * So we prove it correct separately for several possible sizes
+
+    * Our original version had a bug because of this!
+
+* Future versions are likely to relax these restrictions
 
 # Exercises: Composition
 
@@ -498,7 +507,7 @@ let rowround_setup = do {
 
   * Then try the top-level function
 
-4. Can you break it so that one size succeeds but another fails 
+4. Can you break it so that one size succeeds but another fails?
 
 # Sidebar: Fuzzing for Property Based Tests
 
@@ -577,6 +586,6 @@ for [1, 10, 20, 100] (\sz ->
 
     * Cryptol documentation: https://cryptol.net/documentation.html
 
-* I'll be around all day, and happy to talk more!
+* I'll be around all day, and happy to talk more.
 
 * And if this sort of thing interests you, Galois is hiring!
