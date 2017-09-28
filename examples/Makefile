@@ -11,7 +11,7 @@ all: deps.mk ${BCFILES}
 run: ${LOGFILES}
 
 %.bc: %.c
-	clang ${CLANGOPTS} -o $@ $<
+	${CLANG} ${CLANGOPTS} -o $@ $<
 
 %.log: %.saw
 	${SAW} $< 2>&1 | tee $@
