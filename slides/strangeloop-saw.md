@@ -20,11 +20,11 @@
 
 # Installing SAW
 
-* https://saw.galois.com/downloads.html
+* SAW 2017-09-06 from https://saw.galois.com/builds/nightly/
 
-* https://saw.galois.com/builds/nightly/
+* Z3 4.5.0 from https://github.com/Z3Prover/z3/releases
 
-* Builds available for:
+* SAW builds available for:
 
     * CentOS 6 (32-bit and 64-bit) (anything similar to older RedHat)
 
@@ -36,9 +36,12 @@
 
     * Windows (64-bit)
 
-* VirtualBox VM image:
+* VirtualBox VM image and local(ish) tarballs:
 
-    * http://ipaddr:8000/SAW Workshop (Debian).vdi
+    * http://10.129.176.174:8000/
+        * SAW Workshop (Debian).vdi
+        * saw/* (files for various platforms)
+        * z3/* (files for various platforms)
     * Login: root/saw-workshop, saw/saw-workshop
 
 # What is SAW?
